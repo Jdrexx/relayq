@@ -25,7 +25,7 @@ class TestRetryPolicy:
 
     def test_delay_exponential_no_jitter(self):
         """Without jitter, delay follows exact exponential backoff."""
-        policy = RetryPolicy(base_seconds=2.0, cap_seconds=60.0, jitter=False)
+        policy = RetryPolicy(base_seconds=2.0, cap_seconds=60.0, max_attempts=10, jitter=False)
 
         assert policy.delay(0) == 2.0
         assert policy.delay(1) == 4.0
