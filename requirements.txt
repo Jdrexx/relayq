@@ -1,0 +1,6 @@
+# RelayQ runtime dependencies (pip install -r requirements.txt)
+redis[hiredis]>=5.0
+prometheus-client>=0.19
+fastapi>=0.109
+uvicorn[standard]>=0.27
+pydantic>=2.5

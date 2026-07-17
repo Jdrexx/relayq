@@ -1,0 +1,61 @@
+{
+  "title": "RelayQ — Queue Dashboard",
+  "uid": "relayq",
+  "version": 1,
+  "panels": [
+    {
+      "title": "Queue Depth",
+      "type": "graph",
+      "targets": [
+        {
+          "expr": "relayq_queue_depth",
+          "legendFormat": "{{queue}}"
+        }
+      ],
+      "gridPos": {"x": 0, "y": 0, "w": 12, "h": 8}
+    },
+    {
+      "title": "Processing Duration (p50/p95/p99)",
+      "type": "graph",
+      "targets": [
+        {"expr": "histogram_quantile(0.50, rate(relayq_processing_seconds_bucket[5m]))", "legendFormat": "p50"},
+        {"expr": "histogram_quantile(0.95, rate(relayq_processing_seconds_bucket[5m]))", "legendFormat": "p95"},
+        {"expr": "histogram_quantile(0.99, rate(relayq_processing_seconds_bucket[5m]))", "legendFormat": "p99"}
+      ],
+      "gridPos": {"x": 12, "y": 0, "w": 12, "h": 8}
+    },
+    {
+      "title": "Delivery Attempts (rate)",
+      "type": "graph",
+      "targets": [
+        {
+          "expr": "rate(relayq_delivery_attempts_total[5m])",
+          "legendFormat": "{{queue}} {{success}}"
+        }
+      ],
+      "gridPos": {"x": 0, "y": 8, "w": 12, "h": 8}
+    },
+    {
+      "title": "Dead Letters (cumulative)",
+      "type": "graph",
+      "targets": [
+        {
+          "expr": "relayq_dead_letter_total",
+          "legendFormat": "{{queue}} {{kind}}"
+        }
+      ],
+      "gridPos": {"x": 12, "y": 8, "w": 12, "h": 8}
+    },
+    {
+      "title": "Worker Inflight",
+      "type": "graph",
+      "targets": [
+        {
+          "expr": "relayq_worker_inflight",
+          "legendFormat": "{{queue}}"
+        }
+      ],
+      "gridPos": {"x": 0, "y": 16, "w": 12, "h": 8}
+    }
+  ]
+}

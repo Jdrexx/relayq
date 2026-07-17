@@ -1,0 +1,14 @@
+[build]
+  builder = "nixpacks"
+  build_command = "pip install -e ."
+
+[deploy]
+  start_command = "uvicorn api.main:app --host 0.0.0.0 --port $PORT"
+  healthcheck_path = "/queues"
+
+[[services]]
+  name = "api"
+  [service.source]
+    repo = "https://github.com/yourorg/relayq"
+  [service.redis]
+    plan = "mini"
