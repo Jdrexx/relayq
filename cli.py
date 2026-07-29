@@ -17,10 +17,22 @@ from __future__ import annotations
 import json
 import os
 import sys
+from urllib.parse import quote, urlsplit
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError
 
-API_URL = os.getenv("RELAYQ_API_URL", "http://localhost:8000")
+
+def _validated_api_url(value: str) -> str:
+    parsed = urlsplit(value)
+    if parsed.scheme not in {"http", "https"} or not parsed.hostname:
+        raise ValueError("RELAYQ_API_URL must be an HTTP(S) URL with a hostname")
+    if parsed.username or parsed.password or parsed.query or parsed.fragment:
+        raise ValueError("RELAYQ_API_URL must not contain credentials, a query, or a fragment")
+    return value.rstrip("/")
+
+
+API_URL = _validated_api_url(os.getenv("RELAYQ_API_URL", "http://localhost:8000"))
+REQUEST_TIMEOUT_SECONDS = 15
 
 
 def _request(method: str, path: str, body: dict | None = None) -> dict:
@@ -29,7 +41,7 @@ def _request(method: str, path: str, body: dict | None = None) -> dict:
     req = Request(url, data=data, method=method)
     req.add_header("Content-Type", "application/json")
     try:
-        with urlopen(req) as resp:
+        with urlopen(req, timeout=REQUEST_TIMEOUT_SECONDS) as resp:  # nosec B310
             return json.loads(resp.read().decode())
     except HTTPError as exc:
         body = exc.read().decode()
@@ -63,7 +75,7 @@ def cmd_status(args: list[str]):
     if len(args) < 1:
         print("Usage: relayq status <job-id>", file=sys.stderr)
         sys.exit(1)
-    result = _request("GET", f"/jobs/{args[0]}")
+    result = _request("GET", f"/jobs/{quote(args[0], safe='')}")
     print(json.dumps(result, indent=2))
 
 
@@ -77,7 +89,7 @@ def cmd_dlq(args: list[str]):
     if len(args) < 1:
         print("Usage: relayq dlq <queue>", file=sys.stderr)
         sys.exit(1)
-    result = _request("GET", f"/queues/{args[0]}/dlq")
+    result = _request("GET", f"/queues/{quote(args[0], safe='')}/dlq")
     print(f"DLQ for queue '{args[0]}' ({result.get('count', 0)} entries):")
     for entry in result.get("entries", []):
         job = entry.get("job", {})
@@ -88,7 +100,9 @@ def cmd_replay(args: list[str]):
     if len(args) < 2:
         print("Usage: relayq replay <queue> <job-id>", file=sys.stderr)
         sys.exit(1)
-    result = _request("POST", f"/queues/{args[0]}/dlq/{args[1]}/replay")
+    queue = quote(args[0], safe="")
+    job_id = quote(args[1], safe="")
+    result = _request("POST", f"/queues/{queue}/dlq/{job_id}/replay")
     print(f"Replayed job {result['job_id']} (new stream entry: {result['new_stream_entry_id']})")
 
 
