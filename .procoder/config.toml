@@ -1,0 +1,36 @@
+# procoder configuration.
+#
+# Every knob procoder reads lives in this file. `procoder config` prints
+# the effective value of each setting and where it came from, so anything
+# left commented out here is running on procoder's default.
+#
+# Nothing below is active yet — this repository was onboarded with stock
+# behaviour on purpose, so the gate reports before it starts refusing.
+# Turn a knob on once the repo can actually pass it.
+
+# [git]
+# What happens when work lands directly on the default branch:
+#   "report" (default) — the agent is told; branching stays its decision
+#   "block"            — the gate fails until the work moves to a branch
+# default_branch_policy = "block"
+#
+# Files larger than this (MB) block the gate. Default is 5.
+# max_file_mb = 5
+
+# [test]
+# "block" makes `todo close` and `backlog story close` refuse while
+# `procoder test` is red or could not run. Turn on once the suite is green.
+# policy = "block"
+
+# [lint]
+# "block" promotes lint findings from report to gate-blocking.
+# policy = "block"
+
+# [docs]
+# "block" means a public-surface change with no documentation change has
+# to be answered rather than skipped.
+# policy = "block"
+
+# [release]
+# The version-bearing files `procoder release` keeps in sync.
+# files = ["package.json", "README.md"]

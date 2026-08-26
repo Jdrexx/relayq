@@ -27,3 +27,6 @@ Thumbs.db
 .pytest_cache/
 .coverage
 htmlcov/
+.procoder/state/
+.procoder/index/
+.lycheecache
