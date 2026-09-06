@@ -64,9 +64,7 @@ class RedisStreamTransport:
         stream = self._stream_key(queue)
         group = self._group_key(queue)
         try:
-            await self.redis.xgroup_create(
-                stream, group, id="0", mkstream=True
-            )
+            await self.redis.xgroup_create(stream, group, id="0", mkstream=True)
         except redis.ResponseError as exc:
             if "BUSYGROUP" not in str(exc):
                 raise  # Unexpected Redis error
@@ -108,7 +106,9 @@ class RedisStreamTransport:
             "job": json.dumps(job.to_dict(), default=str),
             "reason": reason,
             "dlqed_at": json.dumps(
-                job.created_at.isoformat() if hasattr(job.created_at, "isoformat") else str(job.created_at),
+                job.created_at.isoformat()
+                if hasattr(job.created_at, "isoformat")
+                else str(job.created_at),
                 default=str,
             ),
         }
@@ -143,16 +143,28 @@ class RedisStreamTransport:
             for entry_id, fields in entries:
                 raw = fields.get(b"job", fields.get("job"))
                 if raw is None:
-                    logger.warning("Malformed stream entry %s — no 'job' field", entry_id)
+                    logger.warning(
+                        "Malformed stream entry %s — no 'job' field", entry_id
+                    )
                     continue
                 if isinstance(raw, bytes):
                     raw = raw.decode("utf-8")
                 try:
                     job_dict = json.loads(raw)
                     job = Job.from_dict(job_dict)
-                    jobs.append((stream_name.decode() if isinstance(stream_name, bytes) else stream_name, entry_id, job))
+                    jobs.append(
+                        (
+                            stream_name.decode()
+                            if isinstance(stream_name, bytes)
+                            else stream_name,
+                            entry_id,
+                            job,
+                        )
+                    )
                 except (json.JSONDecodeError, KeyError) as exc:
-                    logger.error("Failed to deserialise job from entry %s: %s", entry_id, exc)
+                    logger.error(
+                        "Failed to deserialise job from entry %s: %s", entry_id, exc
+                    )
         return jobs
 
     async def xack(self, queue: str, entry_id: str) -> int:
@@ -209,7 +221,9 @@ class RedisStreamTransport:
 
     # -- DLQ read-back --------------------------------------------------------
 
-    async def read_dlq(self, queue: str, start: str = "-", end: str = "+", count: int = 50) -> list[dict]:
+    async def read_dlq(
+        self, queue: str, start: str = "-", end: str = "+", count: int = 50
+    ) -> list[dict]:
         """Read dead-letter queue entries (reversed — newest first)."""
         dlq = self._dlq_key(queue)
         entries = await self.redis.xrevrange(dlq, end, start, count=count)
@@ -260,7 +274,9 @@ class RedisStreamTransport:
         cursor = 0
         queues: set[str] = set()
         while True:
-            cursor, keys = await self.redis.scan(cursor=cursor, match=pattern, count=100)
+            cursor, keys = await self.redis.scan(
+                cursor=cursor, match=pattern, count=100
+            )
             for key in keys:
                 if isinstance(key, bytes):
                     key = key.decode("utf-8")

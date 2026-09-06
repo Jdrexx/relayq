@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import uuid
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Any
 
@@ -44,7 +44,7 @@ class Job:
     kind: str = ""
     payload: dict[str, Any] = field(default_factory=dict)
     status: JobStatus = JobStatus.PENDING
-    created_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     attempts: int = 0
     max_retries: int = 3
     idempotency_key: str | None = None
@@ -72,7 +72,7 @@ class Job:
             status=JobStatus(d.get("status", "pending")),
             created_at=datetime.fromisoformat(d["created_at"])
             if "created_at" in d
-            else datetime.utcnow(),
+            else datetime.now(timezone.utc),
             attempts=d.get("attempts", 0),
             max_retries=d.get("max_retries", 3),
             idempotency_key=d.get("idempotency_key"),

@@ -2,7 +2,7 @@
 
 **Status:** Accepted  
 **Date:** 2025-01-01  
-**Author:** RelayQ Team  
+**Author:** RelayQ Team
 
 ## Context
 
@@ -19,6 +19,7 @@ Many queue tutorials claim "exactly-once" but actually mean "at-least-once with 
 **Explicitly provide at-least-once delivery with idempotency keys for consumer-side deduplication.**
 
 Key points:
+
 1. The transport (Redis Streams consumer groups) guarantees every job is XACK'd before removal — if a consumer crashes, XAUTOCLAIM redelivers.
 2. The API accepts an optional `idempotency_key` header. If a job with the same key already exists (within the deduplication window), the request is rejected with `409 Conflict`.
 3. The idempotency key is stored in the outbox (SQLite/Postgres) with a UNIQUE index, preventing TOCTOU races (CWE-362).
@@ -27,6 +28,7 @@ Key points:
 ## Consequences
 
 ### Positive
+
 - Honest documentation builds trust: consumers know they must be idempotent
 - Idempotency keys are a well-understood pattern (Stripe, AWS, etc.)
 - The outbox UNIQUE index makes the check atomic — no application-level locking
@@ -34,13 +36,16 @@ Key points:
 - No consensus protocol needed (no Paxos/Raft, no two-phase commit)
 
 ### Negative
+
 - Idempotency keys require consumer cooperation — not automatic
 - The deduplication window is bounded by the outbox retention policy (keys eventually expire)
 - If the outbox write succeeds but the XADD fails, the idempotency key is consumed but the job never runs — requires reconciliation
 - Duplicate deliveries can still happen if the handler runs but XACK fails (crash scenario 2)
 
 ### Why not exactly-once?
+
 True exactly-once in a distributed system requires:
+
 - A distributed consensus algorithm (Paxos, Raft, or ZooKeeper)
 - Fencing tokens to prevent split-brain
 - Idempotent receivers with exactly-once sinks (e.g., Kafka's transactional producer + idempotent producer)

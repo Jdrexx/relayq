@@ -85,7 +85,9 @@ class WorkerRunner:
         await self.transport.ensure_group(self.queue)
         logger.info(
             "Worker %s starting on queue '%s' (max_concurrency=%d)",
-            self.worker_id, self.queue, self.semaphore._value,
+            self.worker_id,
+            self.queue,
+            self.semaphore._value,
         )
 
         # Start the recovery loop for this queue if configured
@@ -133,9 +135,7 @@ class WorkerRunner:
                     # Acquire semaphore before spawning the task
                     await self.semaphore.acquire()
 
-                    task = asyncio.create_task(
-                        self._process_job(stream, entry_id, job)
-                    )
+                    task = asyncio.create_task(self._process_job(stream, entry_id, job))
                     self._inflight.add(task)
                     task.add_done_callback(self._inflight.discard)
 
@@ -158,9 +158,7 @@ class WorkerRunner:
             await self.shutdown.drain(self._inflight)
             logger.info("Worker stopped for queue '%s'", self.queue)
 
-    async def _process_job(
-        self, stream: str, entry_id: str, job: Any
-    ) -> None:
+    async def _process_job(self, stream: str, entry_id: str, job: Any) -> None:
         """Wrap executor.execute with semaphore release."""
         try:
             await self.executor.execute(
@@ -173,10 +171,10 @@ class WorkerRunner:
             # CWE-754: Unhandled exception in the executor should never
             # crash the worker loop.  Log and move on.
             logger.exception(
-                "Unhandled error processing job %s: %s", job.id, exc,
+                "Unhandled error processing job %s: %s",
+                job.id,
+                exc,
             )
         finally:
             self.semaphore.release()
-            self.metrics.observe_worker_inflight(
-                self.queue, len(self._inflight)
-            )
+            self.metrics.observe_worker_inflight(self.queue, len(self._inflight))

@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import re
 import uuid
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
@@ -10,8 +11,7 @@ from typing import Any
 
 import redis.asyncio as redis
 from fastapi import FastAPI, HTTPException, Request, Response
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from relayq.application.enqueue import Enqueuer
 from relayq.domain.errors import IdempotencyConflict, QueueFull
@@ -22,6 +22,8 @@ from relayq.telemetry.metrics import Metrics
 
 logger = logging.getLogger("relayq.api")
 
+MAX_PAYLOAD_BYTES = 1024 * 1024  # 1 MB serialized job payload cap (CWE-770)
+
 # -- globals (set during lifespan) -------------------------------------------
 
 transport: RedisStreamTransport | None = None
@@ -31,6 +33,7 @@ redis_client: redis.Redis | None = None
 
 
 # -- lifespan -----------------------------------------------------------------
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -65,13 +68,11 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# NOTE: deliberately NO CORSMiddleware. The enqueue API is a backend service
+# (workers + CLI + internal callers); there is no browser UI served from this
+# origin, so permissive CORS would only let hostile web pages enqueue jobs or
+# read DLQ contents (which carry full job payloads) against the operator's
+# browser. Same-origin/backend callers need no CORS headers.
 
 
 # -- middleware ----------------------------------------------------------------
@@ -108,6 +109,7 @@ async def structured_logging_middleware(request: Request, call_next):
 
 
 # -- token bucket rate limiter ------------------------------------------------
+
 
 class TokenBucketRateLimiter:
     """Atomic token bucket via a Lua script.
@@ -206,7 +208,10 @@ async def rate_limit_middleware(request: Request, call_next):
     global rate_limiter
     if rate_limiter is None and redis_client is not None:
         rate_limiter = TokenBucketRateLimiter(
-            redis_client, "ratelimit:api", rate=100, capacity=150,
+            redis_client,
+            "ratelimit:api",
+            rate=100,
+            capacity=150,
         )
 
     if rate_limiter:
@@ -223,6 +228,7 @@ async def rate_limit_middleware(request: Request, call_next):
 
 
 # -- circuit breaker helper ---------------------------------------------------
+
 
 class CircuitBreaker:
     """Simple circuit breaker for downstream dependencies.
@@ -283,18 +289,60 @@ class CircuitBreaker:
         return False
 
     async def reset(self) -> None:
-        await self.redis.delete(self.key, f"{self.key}:state", f"{self.key}:last_failure")
+        await self.redis.delete(
+            self.key, f"{self.key}:state", f"{self.key}:last_failure"
+        )
 
 
 # -- request/response models --------------------------------------------------
 
 
 class EnqueueRequest(BaseModel):
-    kind: str = Field(..., description="Job type/routing key")
-    payload: dict[str, Any] = Field(default_factory=dict)
-    queue: str = Field(default="default", description="Queue name")
-    idempotency_key: str | None = Field(default=None, description="Idempotency key for deduplication")
-    max_retries: int = Field(default=3, ge=0, le=25, description="Max retry attempts before DLQ")
+    kind: str = Field(
+        ..., min_length=1, max_length=100, description="Job type/routing key"
+    )
+    payload: dict[str, Any] = Field(default_factory=dict, description="Job payload")
+    queue: str = Field(
+        default="default", min_length=1, max_length=100, description="Queue name"
+    )
+    idempotency_key: str | None = Field(
+        default=None,
+        min_length=1,
+        max_length=200,
+        description="Idempotency key for deduplication",
+    )
+    max_retries: int = Field(
+        default=3, ge=0, le=25, description="Max retry attempts before DLQ"
+    )
+
+    @field_validator("kind", "queue")
+    @classmethod
+    def validate_identifier(cls, value: str) -> str:
+        # Queue names become Redis stream keys and URL path segments; kinds are
+        # routing keys registered by workers. Keep both to a safe, printable
+        # charset so a crafted value cannot collide with RelayQ's own key
+        # layout (relayq:{name}:stream / :dlq / :group).
+        if not re.fullmatch(r"[A-Za-z0-9_.-]{1,100}", value):
+            raise ValueError("must contain only letters, digits, _, ., -")
+        return value
+
+    @field_validator("payload")
+    @classmethod
+    def bound_payload_size(cls, value: dict[str, Any]) -> dict[str, Any]:
+        # CWE-770 (from Job's own docstring): payload size SHOULD be bounded at
+        # the API layer to prevent memory exhaustion in Redis stream entries
+        # and worker deserialisation. The Job dataclass noted this and the API
+        # never enforced it — a 100 MB payload now lands in Redis + every
+        # worker's RAM. Cap the serialized size at 1 MB.
+        import json
+
+        size = len(json.dumps(value, default=str).encode("utf-8"))
+        if size > MAX_PAYLOAD_BYTES:
+            raise ValueError(
+                f"payload exceeds the {MAX_PAYLOAD_BYTES // (1024 * 1024)} MB limit "
+                f"({size} bytes serialized)"
+            )
+        return value
 
 
 class JobStatusResponse(BaseModel):
@@ -401,12 +449,14 @@ async def list_queues() -> dict:
         # Actually, let's use XLEN on the DLQ stream
         dlq_key = transport._dlq_key(name)
         dlq_count = await redis_client.xlen(dlq_key) if redis_client else 0
-        stats.append({
-            "name": name,
-            "depth": depth,
-            "oldest_job_age_seconds": 0.0,
-            "dead_letter_count": dlq_count,
-        })
+        stats.append(
+            {
+                "name": name,
+                "depth": depth,
+                "oldest_job_age_seconds": 0.0,
+                "dead_letter_count": dlq_count,
+            }
+        )
 
     return {"queues": stats}
 

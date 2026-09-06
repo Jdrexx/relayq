@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Worker entrypoint for Docker deployment."""
+
 import asyncio
 import logging
 import os
@@ -19,7 +20,9 @@ logger = logging.getLogger("relayq.worker")
 
 async def handler(job: Job) -> dict:
     """Default no-op handler for Docker demo."""
-    logger.info("Processing job %s (kind=%s, payload=%s)", job.id, job.kind, job.payload)
+    logger.info(
+        "Processing job %s (kind=%s, payload=%s)", job.id, job.kind, job.payload
+    )
     return {"ok": True}
 
 

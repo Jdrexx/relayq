@@ -55,7 +55,20 @@ class Metrics:
             name=f"{self._ns}_processing_seconds",
             documentation="Time spent processing a job (seconds)",
             labelnames=["queue", "kind"],
-            buckets=(0.01, 0.05, 0.1, 0.5, 1.0, 2.5, 5.0, 10.0, 30.0, 60.0, 120.0, 300.0),
+            buckets=(
+                0.01,
+                0.05,
+                0.1,
+                0.5,
+                1.0,
+                2.5,
+                5.0,
+                10.0,
+                30.0,
+                60.0,
+                120.0,
+                300.0,
+            ),
             registry=registry,
         )
 
@@ -93,7 +106,9 @@ class Metrics:
         # Defaulting to "unknown" is better than crashing.
         self.processing_seconds.labels(queue="unknown", kind=kind).observe(elapsed)
 
-    def observe_processing_seconds_for_queue(self, queue: str, kind: str, elapsed: float) -> None:
+    def observe_processing_seconds_for_queue(
+        self, queue: str, kind: str, elapsed: float
+    ) -> None:
         self.processing_seconds.labels(queue=queue, kind=kind).observe(elapsed)
 
     def incr_delivery_attempts(self, kind: str, success: bool) -> None:

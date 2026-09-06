@@ -20,7 +20,10 @@ def test_api_url_rejects_unsafe_values(url):
 
 def test_api_url_accepts_http_and_https():
     assert cli._validated_api_url("http://localhost:8000/") == "http://localhost:8000"
-    assert cli._validated_api_url("https://relayq.example.com") == "https://relayq.example.com"
+    assert (
+        cli._validated_api_url("https://relayq.example.com")
+        == "https://relayq.example.com"
+    )
 
 
 def test_status_quotes_job_identifier(monkeypatch):

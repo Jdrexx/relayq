@@ -106,7 +106,9 @@ class SqliteStore:
             ),
         )
 
-    def update_status(self, job_id: str, status: JobStatus, attempt: int | None = None) -> None:
+    def update_status(
+        self, job_id: str, status: JobStatus, attempt: int | None = None
+    ) -> None:
         conn = self._get_conn()
         if attempt is not None:
             conn.execute(
@@ -121,15 +123,15 @@ class SqliteStore:
 
     def get_job(self, job_id: str) -> Job | None:
         conn = self._get_conn()
-        row = conn.execute(
-            "SELECT * FROM jobs WHERE id = ?", (job_id,)
-        ).fetchone()
+        row = conn.execute("SELECT * FROM jobs WHERE id = ?", (job_id,)).fetchone()
         if row is None:
             return None
         return Job(
             id=row["id"],
             kind=row["kind"],
-            payload=json.loads(row["payload"]) if isinstance(row["payload"], str) else row["payload"],
+            payload=json.loads(row["payload"])
+            if isinstance(row["payload"], str)
+            else row["payload"],
             status=JobStatus(row["status"]),
             created_at=self.clock.utcnow(),  # we saved isoformat, parse it
             attempts=row["attempts"],
@@ -148,7 +150,9 @@ class SqliteStore:
         return Job(
             id=row["id"],
             kind=row["kind"],
-            payload=json.loads(row["payload"]) if isinstance(row["payload"], str) else row["payload"],
+            payload=json.loads(row["payload"])
+            if isinstance(row["payload"], str)
+            else row["payload"],
             status=JobStatus(row["status"]),
             created_at=self.clock.utcnow(),
             attempts=row["attempts"],

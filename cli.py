@@ -27,7 +27,9 @@ def _validated_api_url(value: str) -> str:
     if parsed.scheme not in {"http", "https"} or not parsed.hostname:
         raise ValueError("RELAYQ_API_URL must be an HTTP(S) URL with a hostname")
     if parsed.username or parsed.password or parsed.query or parsed.fragment:
-        raise ValueError("RELAYQ_API_URL must not contain credentials, a query, or a fragment")
+        raise ValueError(
+            "RELAYQ_API_URL must not contain credentials, a query, or a fragment"
+        )
     return value.rstrip("/")
 
 
@@ -63,11 +65,15 @@ def cmd_enqueue(args: list[str]):
     except json.JSONDecodeError:
         payload = {"data": args[1]}
 
-    result = _request("POST", "/jobs", {
-        "kind": "generic",
-        "payload": payload,
-        "queue": queue,
-    })
+    result = _request(
+        "POST",
+        "/jobs",
+        {
+            "kind": "generic",
+            "payload": payload,
+            "queue": queue,
+        },
+    )
     print(f"Enqueued job {result['job_id']} (stream: {result['stream_entry_id']})")
 
 
@@ -82,7 +88,9 @@ def cmd_status(args: list[str]):
 def cmd_queues(args: list[str]):
     result = _request("GET", "/queues")
     for q in result.get("queues", []):
-        print(f"{q['name']:20s} depth={q['depth']:>6d}  dlq={q['dead_letter_count']:>4d}")
+        print(
+            f"{q['name']:20s} depth={q['depth']:>6d}  dlq={q['dead_letter_count']:>4d}"
+        )
 
 
 def cmd_dlq(args: list[str]):
@@ -93,7 +101,9 @@ def cmd_dlq(args: list[str]):
     print(f"DLQ for queue '{args[0]}' ({result.get('count', 0)} entries):")
     for entry in result.get("entries", []):
         job = entry.get("job", {})
-        print(f"  {job.get('id', '?')}: {job.get('kind', '?')} — {entry.get('reason', '?')}")
+        print(
+            f"  {job.get('id', '?')}: {job.get('kind', '?')} — {entry.get('reason', '?')}"
+        )
 
 
 def cmd_replay(args: list[str]):
@@ -103,7 +113,9 @@ def cmd_replay(args: list[str]):
     queue = quote(args[0], safe="")
     job_id = quote(args[1], safe="")
     result = _request("POST", f"/queues/{queue}/dlq/{job_id}/replay")
-    print(f"Replayed job {result['job_id']} (new stream entry: {result['new_stream_entry_id']})")
+    print(
+        f"Replayed job {result['job_id']} (new stream entry: {result['new_stream_entry_id']})"
+    )
 
 
 def main():

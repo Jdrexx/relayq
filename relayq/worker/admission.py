@@ -54,9 +54,7 @@ class AdmissionController:
         """
         depth = await self.transport.stream_length(queue)
         if depth >= self.max_depth:
-            raise AdmissionBlocked(
-                queue, f"depth {depth} >= {self.max_depth}"
-            )
+            raise AdmissionBlocked(queue, f"depth {depth} >= {self.max_depth}")
 
         # We could check oldest entry age via XPENDING here, but that
         # requires iterating pending entries.  For the portfolio, depth

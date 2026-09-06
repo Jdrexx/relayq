@@ -25,6 +25,12 @@ dev = [
     "httpx>=0.26",
 ]
 
+[tool.setuptools]
+py-modules = ["cli", "run_worker"]
+
+[tool.setuptools.packages.find]
+include = ["relayq*", "api*"]
+
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]

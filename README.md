@@ -82,13 +82,13 @@
 
 RelayQ guarantees that every acknowledged job will be delivered **at least once**. It does NOT guarantee exactly-once delivery.
 
-| Scenario | Behaviour |
-|----------|-----------|
-| Worker crashes before handler | Job stays in Pending list → XAUTOCLAIM → redelivered to another worker |
-| Handler succeeds, crash before XACK | Handler ran (side effects fired). Job stays Pending → redelivered → handler runs AGAIN |
-| Handler succeeds, XACK succeeds, crash before outbox update | Job processed. Outbox stuck on `processing`. Reconciliation needed |
-| XADD to stream fails | Job stays in outbox as `pending` → recovery process replays |
-| DLQ write fails | Job stays in Pending list → retried later, possibly exceeding max_retries |
+| Scenario                                                    | Behaviour                                                                              |
+| ----------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| Worker crashes before handler                               | Job stays in Pending list → XAUTOCLAIM → redelivered to another worker                 |
+| Handler succeeds, crash before XACK                         | Handler ran (side effects fired). Job stays Pending → redelivered → handler runs AGAIN |
+| Handler succeeds, XACK succeeds, crash before outbox update | Job processed. Outbox stuck on `processing`. Reconciliation needed                     |
+| XADD to stream fails                                        | Job stays in outbox as `pending` → recovery process replays                            |
+| DLQ write fails                                             | Job stays in Pending list → retried later, possibly exceeding max_retries              |
 
 ### How to handle duplication (idempotency keys)
 
@@ -182,15 +182,15 @@ relayq replay <queue> <job-id>
 
 ## Tech Stack
 
-| Component | Technology | Why |
-|-----------|-----------|-----|
-| Transport | **Redis Streams** | Consumer groups, XAUTOCLAIM, MAXLEN — see ADR-001 |
-| API    | **FastAPI** | Async-native, Pydantic validation, OpenAPI docs |
-| Worker | **asyncio** | Single-threaded concurrency, no GIL contention for I/O |
-| Outbox | **SQLite** (dev) / **Postgres** (prod) | Transactional dual-write — see ADR-003 |
-| Metrics | **Prometheus** + **Grafana** | Standard observability stack |
-| CLI    | **stdlib** (urllib) | Zero extra dependencies for basic ops |
-| Deploy | **Docker** / **Railway** | Multi-stage build, non-root user |
+| Component | Technology                             | Why                                                    |
+| --------- | -------------------------------------- | ------------------------------------------------------ |
+| Transport | **Redis Streams**                      | Consumer groups, XAUTOCLAIM, MAXLEN — see ADR-001      |
+| API       | **FastAPI**                            | Async-native, Pydantic validation, OpenAPI docs        |
+| Worker    | **asyncio**                            | Single-threaded concurrency, no GIL contention for I/O |
+| Outbox    | **SQLite** (dev) / **Postgres** (prod) | Transactional dual-write — see ADR-003                 |
+| Metrics   | **Prometheus** + **Grafana**           | Standard observability stack                           |
+| CLI       | **stdlib** (urllib)                    | Zero extra dependencies for basic ops                  |
+| Deploy    | **Docker** / **Railway**               | Multi-stage build, non-root user                       |
 
 ---
 
@@ -198,14 +198,14 @@ relayq replay <queue> <job-id>
 
 All metrics are prefixed with `relayq_` and served at `/metrics` (Prometheus scrape endpoint).
 
-| Metric | Type | Labels | Description |
-|--------|------|--------|-------------|
-| `relayq_queue_depth` | Gauge | `queue` | Current number of entries in the stream |
-| `relayq_oldest_job_age_seconds` | Gauge | `queue` | Age of the oldest pending entry |
-| `relayq_processing_seconds` | Histogram | `queue`, `kind` | Time spent executing a job handler (buckets: 10ms–300s) |
-| `relayq_delivery_attempts_total` | Counter | `queue`, `kind`, `success` | Total delivery attempts by outcome |
-| `relayq_dead_letter_total` | Counter | `queue`, `kind` | Jobs routed to DLQ |
-| `relayq_worker_inflight` | Gauge | `queue` | Jobs currently being processed |
+| Metric                           | Type      | Labels                     | Description                                             |
+| -------------------------------- | --------- | -------------------------- | ------------------------------------------------------- |
+| `relayq_queue_depth`             | Gauge     | `queue`                    | Current number of entries in the stream                 |
+| `relayq_oldest_job_age_seconds`  | Gauge     | `queue`                    | Age of the oldest pending entry                         |
+| `relayq_processing_seconds`      | Histogram | `queue`, `kind`            | Time spent executing a job handler (buckets: 10ms–300s) |
+| `relayq_delivery_attempts_total` | Counter   | `queue`, `kind`, `success` | Total delivery attempts by outcome                      |
+| `relayq_dead_letter_total`       | Counter   | `queue`, `kind`            | Jobs routed to DLQ                                      |
+| `relayq_worker_inflight`         | Gauge     | `queue`                    | Jobs currently being processed                          |
 
 ---
 
@@ -213,21 +213,23 @@ All metrics are prefixed with `relayq_` and served at `/metrics` (Prometheus scr
 
 RelayQ explicitly addresses the following Common Weakness Enumerations:
 
-| CWE | Name | Where Addressed |
-|-----|------|----------------|
-| **CWE-770** | Allocation of Resources Without Limits | Bounded queue depth (`MAXLEN ~ 10000`), payload size limits at API layer, bounded retry caps |
-| **CWE-400** | Uncontrolled Resource Consumption | Backpressure admission control, retry timeout, job processing timeout, bulkhead concurrency limits |
-| **CWE-754** | Unchecked Error Handling | XACK failures logged (not crashed), DLQ write failures logged, recovery loop continues on per-queue errors |
-| **CWE-362** | Concurrent Execution | Idempotency keys with UNIQUE index, outbox pattern with `BEGIN IMMEDIATE`, Lua-based token bucket |
-| **CWE-799** | Interaction Frequency | Full-jitter retry backoff (not naive exponential), rate-limited API |
-| **CWE-703** | Exceptional Conditions | All failure paths in worker loop, executor, and recovery are caught and handled |
+| CWE         | Name                                   | Where Addressed                                                                                            |
+| ----------- | -------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| **CWE-770** | Allocation of Resources Without Limits | Bounded queue depth (`MAXLEN ~ 10000`), payload size limits at API layer, bounded retry caps               |
+| **CWE-400** | Uncontrolled Resource Consumption      | Backpressure admission control, retry timeout, job processing timeout, bulkhead concurrency limits         |
+| **CWE-754** | Unchecked Error Handling               | XACK failures logged (not crashed), DLQ write failures logged, recovery loop continues on per-queue errors |
+| **CWE-362** | Concurrent Execution                   | Idempotency keys with UNIQUE index, outbox pattern with `BEGIN IMMEDIATE`, Lua-based token bucket          |
+| **CWE-799** | Interaction Frequency                  | Full-jitter retry backoff (not naive exponential), rate-limited API                                        |
+| **CWE-703** | Exceptional Conditions                 | All failure paths in worker loop, executor, and recovery are caught and handled                            |
 
 ---
 
 ## Why Redis Streams instead of Celery/Kafka?
 
 ### vs Celery
+
 Celery is the de-facto Python job queue. It's battle-tested and feature-rich. But:
+
 - **RelayQ is NOT a Celery wrapper** — the core queue logic (lease management, backpressure, failure test suites) is custom
 - Celery's transport layer (RabbitMQ/Redis) is abstracted — you don't write to the stream directly
 - RelayQ exposes raw Redis Streams for debugging: you can `redis-cli XLEN relayq:default:stream` directly
@@ -235,12 +237,14 @@ Celery is the de-facto Python job queue. It's battle-tested and feature-rich. Bu
 - Celery's retry backoff is configurable but doesn't default to full jitter
 
 ### vs Kafka
+
 - Kafka is a log, not a work queue. Consumer groups in Kafka are designed for streaming, not point-to-point job distribution
 - Kafka's at-least-once guarantees require careful offset management
 - Kafka has a heavy operational footprint (ZooKeeper/KRaft, disk management)
 - Redis Streams give us the work-queue semantics we want with a fraction of the complexity
 
 ### vs RabbitMQ
+
 - RabbitMQ has excellent job-queue features (dead-letter exchanges, TTL, delayed queues)
 - But consumer lease recovery is more manual (consumer cancellation notices, manual requeue)
 - XAUTOCLAIM (Redis 6.2+) is a cleaner recovery mechanism

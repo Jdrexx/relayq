@@ -25,7 +25,9 @@ class TestRetryPolicy:
 
     def test_delay_exponential_no_jitter(self):
         """Without jitter, delay follows exact exponential backoff."""
-        policy = RetryPolicy(base_seconds=2.0, cap_seconds=60.0, max_attempts=10, jitter=False)
+        policy = RetryPolicy(
+            base_seconds=2.0, cap_seconds=60.0, max_attempts=10, jitter=False
+        )
 
         assert policy.delay(0) == 2.0
         assert policy.delay(1) == 4.0
@@ -69,7 +71,9 @@ class TestRetryPolicy:
 
     def test_max_total_window(self):
         """max_total_window returns the sum of all capped exponential delays."""
-        policy = RetryPolicy(base_seconds=1.0, cap_seconds=10.0, max_attempts=3, jitter=False)
+        policy = RetryPolicy(
+            base_seconds=1.0, cap_seconds=10.0, max_attempts=3, jitter=False
+        )
         # attempt 0: 1s, attempt 1: 2s, attempt 2: 4s = 7s total
         assert policy.max_total_window() == 7.0
 

@@ -12,17 +12,26 @@
           "legendFormat": "{{queue}}"
         }
       ],
-      "gridPos": {"x": 0, "y": 0, "w": 12, "h": 8}
+      "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 }
     },
     {
       "title": "Processing Duration (p50/p95/p99)",
       "type": "graph",
       "targets": [
-        {"expr": "histogram_quantile(0.50, rate(relayq_processing_seconds_bucket[5m]))", "legendFormat": "p50"},
-        {"expr": "histogram_quantile(0.95, rate(relayq_processing_seconds_bucket[5m]))", "legendFormat": "p95"},
-        {"expr": "histogram_quantile(0.99, rate(relayq_processing_seconds_bucket[5m]))", "legendFormat": "p99"}
+        {
+          "expr": "histogram_quantile(0.50, rate(relayq_processing_seconds_bucket[5m]))",
+          "legendFormat": "p50"
+        },
+        {
+          "expr": "histogram_quantile(0.95, rate(relayq_processing_seconds_bucket[5m]))",
+          "legendFormat": "p95"
+        },
+        {
+          "expr": "histogram_quantile(0.99, rate(relayq_processing_seconds_bucket[5m]))",
+          "legendFormat": "p99"
+        }
       ],
-      "gridPos": {"x": 12, "y": 0, "w": 12, "h": 8}
+      "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 }
     },
     {
       "title": "Delivery Attempts (rate)",
@@ -33,7 +42,7 @@
           "legendFormat": "{{queue}} {{success}}"
         }
       ],
-      "gridPos": {"x": 0, "y": 8, "w": 12, "h": 8}
+      "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 }
     },
     {
       "title": "Dead Letters (cumulative)",
@@ -44,7 +53,7 @@
           "legendFormat": "{{queue}} {{kind}}"
         }
       ],
-      "gridPos": {"x": 12, "y": 8, "w": 12, "h": 8}
+      "gridPos": { "x": 12, "y": 8, "w": 12, "h": 8 }
     },
     {
       "title": "Worker Inflight",
@@ -55,7 +64,7 @@
           "legendFormat": "{{queue}}"
         }
       ],
-      "gridPos": {"x": 0, "y": 16, "w": 12, "h": 8}
+      "gridPos": { "x": 0, "y": 16, "w": 12, "h": 8 }
     }
   ]
 }

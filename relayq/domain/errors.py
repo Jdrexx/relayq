@@ -17,9 +17,7 @@ class QueueFull(Exception):
         self.queue = queue
         self.depth = depth
         self.max_depth = max_depth
-        super().__init__(
-            f"queue '{queue}' at capacity {depth}/{max_depth}"
-        )
+        super().__init__(f"queue '{queue}' at capacity {depth}/{max_depth}")
 
 
 class JobTimeout(Exception):
@@ -37,9 +35,7 @@ class JobTimeout(Exception):
     def __init__(self, job_id: str, timeout_seconds: float):
         self.job_id = job_id
         self.timeout_seconds = timeout_seconds
-        super().__init__(
-            f"job '{job_id}' timed out after {timeout_seconds}s"
-        )
+        super().__init__(f"job '{job_id}' timed out after {timeout_seconds}s")
 
 
 class CircuitOpen(Exception):
@@ -59,8 +55,7 @@ class CircuitOpen(Exception):
         self.name = name
         self.failure_ratio = failure_ratio
         super().__init__(
-            f"circuit breaker open for '{name}' "
-            f"(failure ratio {failure_ratio:.2f})"
+            f"circuit breaker open for '{name}' (failure ratio {failure_ratio:.2f})"
         )
 
 
@@ -84,6 +79,4 @@ class IdempotencyConflict(Exception):
 
     def __init__(self, idempotency_key: str):
         self.idempotency_key = idempotency_key
-        super().__init__(
-            f"idempotency key '{idempotency_key}' already exists"
-        )
+        super().__init__(f"idempotency key '{idempotency_key}' already exists")

@@ -7,7 +7,9 @@ from relayq.domain.errors import IdempotencyConflict, QueueFull
 from relayq.domain.job import Job
 from relayq.infrastructure.clock import Clock
 from relayq.infrastructure.redis_stream import RedisStreamTransport
-from relayq.infrastructure.sqlite_store import SqliteStore  # only used when Redis is absent
+from relayq.infrastructure.sqlite_store import (
+    SqliteStore,
+)  # only used when Redis is absent
 
 logger = logging.getLogger(__name__)
 
@@ -116,6 +118,9 @@ class Enqueuer:
 
         logger.info(
             "Enqueued job %s (kind=%s) to queue '%s' — stream entry %s",
-            job.id, job.kind, job.queue, entry_id,
+            job.id,
+            job.kind,
+            job.queue,
+            entry_id,
         )
         return entry_id

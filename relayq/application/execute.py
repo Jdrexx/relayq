@@ -81,9 +81,13 @@ class Executor:
         # ------------------------------------------------------------------
         if self.store:
             try:
-                self.store.update_status(job.id, JobStatus.PROCESSING, attempt=job.attempts)
+                self.store.update_status(
+                    job.id, JobStatus.PROCESSING, attempt=job.attempts
+                )
             except Exception:
-                logger.warning("Failed to update outbox status for %s (non-fatal)", job.id)
+                logger.warning(
+                    "Failed to update outbox status for %s (non-fatal)", job.id
+                )
 
         # ------------------------------------------------------------------
         # Run the handler with a timeout (CWE-400)
@@ -96,7 +100,9 @@ class Executor:
             elapsed = self.clock.monotonic() - start
             logger.error("Job %s timed out after %.2fs", job.id, elapsed)
             self.metrics.observe_processing_seconds(job.kind, elapsed)
-            await self._handle_failure(queue, entry_id, job, JobTimeout(job.id, self.job_timeout))
+            await self._handle_failure(
+                queue, entry_id, job, JobTimeout(job.id, self.job_timeout)
+            )
             return
         except Exception as exc:
             elapsed = self.clock.monotonic() - start
@@ -119,7 +125,9 @@ class Executor:
             # XAUTOCLAIM and re-executed (at-least-once).  Log and move on.
             logger.error(
                 "XACK failed for job %s (entry %s) — will be reclaimed: %s",
-                job.id, entry_id, exc,
+                job.id,
+                entry_id,
+                exc,
             )
 
         if self.store:
@@ -149,14 +157,18 @@ class Executor:
                 self.metrics.incr_dead_letter(job.kind)
                 logger.warning(
                     "Job %s routed to DLQ after %d attempts — %s",
-                    job.id, job.attempts, reason,
+                    job.id,
+                    job.attempts,
+                    reason,
                 )
             except Exception as dlq_exc:
                 # CWE-703: Even the DLQ write can fail (Redis down).
                 # The job stays in the pending list and will be
                 # reclaimed later.
                 logger.error(
-                    "Failed to write job %s to DLQ: %s", job.id, dlq_exc,
+                    "Failed to write job %s to DLQ: %s",
+                    job.id,
+                    dlq_exc,
                 )
 
             if self.store:
@@ -170,15 +182,22 @@ class Executor:
             # The stream entry stays in the pending list; XAUTOCLAIM
             # or the next xreadgroup will redeliver it.
             # --------------------------------------------------------------
-            delay = self.retry_policy.delay(job.attempts - 1)  # attempt already incremented
+            delay = self.retry_policy.delay(
+                job.attempts - 1
+            )  # attempt already incremented
             logger.info(
                 "Job %s failed (attempt %d/%d), retrying in %.2fs",
-                job.id, job.attempts, job.max_retries + 1, delay,
+                job.id,
+                job.attempts,
+                job.max_retries + 1,
+                delay,
             )
 
             if self.store:
                 try:
-                    self.store.update_status(job.id, JobStatus.FAILED, attempt=job.attempts)
+                    self.store.update_status(
+                        job.id, JobStatus.FAILED, attempt=job.attempts
+                    )
                 except Exception:
                     logger.warning("Failed to update outbox for failed job %s", job.id)
 

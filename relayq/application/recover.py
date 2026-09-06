@@ -63,7 +63,9 @@ class RecoveryWorker:
         self._running = True
         logger.info(
             "Recovery worker %s started (interval=%ds, min_idle=%dms)",
-            self.worker_id, self.CLAIM_INTERVAL, self.min_idle_ms,
+            self.worker_id,
+            self.CLAIM_INTERVAL,
+            self.min_idle_ms,
         )
         while self._running:
             for queue in queues:
@@ -74,7 +76,8 @@ class RecoveryWorker:
                     # whole recovery loop.  Log and move on.
                     logger.error(
                         "Recovery claim failed for queue '%s': %s",
-                        queue, exc,
+                        queue,
+                        exc,
                     )
             await asyncio.sleep(self.CLAIM_INTERVAL)
 
@@ -89,7 +92,9 @@ class RecoveryWorker:
         for stream, entry_id, job in claimed:
             logger.info(
                 "Recovered stale job %s (entry %s) from queue '%s'",
-                job.id, entry_id, queue,
+                job.id,
+                entry_id,
+                queue,
             )
 
     def stop(self) -> None:
