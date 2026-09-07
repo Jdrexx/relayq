@@ -43,6 +43,7 @@ def _request(method: str, path: str, body: dict | None = None) -> dict:
     req = Request(url, data=data, method=method)
     req.add_header("Content-Type", "application/json")
     try:
+        # nosemgrep: dynamic-urllib-use-detected - API_URL validated to http(s) w/ hostname, no creds/query/fragment
         with urlopen(req, timeout=REQUEST_TIMEOUT_SECONDS) as resp:  # nosec B310
             return json.loads(resp.read().decode())
     except HTTPError as exc:
